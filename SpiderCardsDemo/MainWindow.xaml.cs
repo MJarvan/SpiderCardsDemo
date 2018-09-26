@@ -116,7 +116,12 @@ namespace SpiderCardsDemo
 		/// <param name="e"></param>
 		private void Rectangle_MouseLeftButtonDown(object sender,MouseButtonEventArgs e)
 		{
-			
+			Rectangle rect = sender as Rectangle;
+			int[] cards = rect.Tag as int[];
+			for(int i = 0;i < cards.Length;i++)
+			{
+
+			}
 		}
 
 		private void PutCardsIntoPlayArea()
@@ -140,9 +145,24 @@ namespace SpiderCardsDemo
 
 			for(int j = 0;j < playcardlist.Count;j++)
 			{
+				int a = 0;
 				foreach(int num in playcardlist[j])
 				{
-
+					Border border = new Border();
+					border.BorderThickness = new Thickness(1);
+					border.BorderBrush = Brushes.Black;
+					border.Height = 120;
+					border.Width = 80;
+					TextBlock textblock = new TextBlock();
+					textblock.Text = num.ToString();
+					textblock.Tag = num;
+					border.Child = textblock;
+					border.VerticalAlignment = VerticalAlignment.Top;
+					border.Margin = new Thickness(0,a * 30,0,0);
+					PlayArea.Children.Add(border);
+					Grid.SetColumn(border,j);
+					//Grid.SetZIndex(border,j);
+					a++;
 				}
 			}
 		}
