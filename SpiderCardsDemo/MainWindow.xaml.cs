@@ -61,6 +61,65 @@ namespace SpiderCardsDemo
 			RefreshCards();
 			PutCardsIntoDrawCardsArea();
 			PutCardsIntoPlayArea();
+			RefreshAllDrag();
+		}
+
+		/// <summary>
+		/// 刷新全部列的拖拽
+		/// </summary>
+		private void RefreshAllDrag()
+		{
+			for(int i = 0;i < PlayArea.ColumnDefinitions.Count;i++)
+			{
+				RefreshDrag(i);
+			}
+		}
+
+		/// <summary>
+		/// 刷新某一列
+		/// </summary>
+		/// <param name="num"></param>
+		private void RefreshDrag(int num)
+		{
+			Border lastborder = new Border();
+			Grid grid = GetChildObject<Grid>(PlayArea,"paGrid" + num.ToString());
+			for(int i = 0;i < grid.Children.Count;i++)
+			{
+				Border border = grid.Children[i] as Border;
+				if(lastborder.Tag == null)
+				{
+					lastborder = border;
+				}
+				else if ((int)border.Tag > (int)lastborder.Tag)
+				{
+					lastborder = border;
+				}
+			}
+
+			lastborder.PreviewMouseLeftButtonDown += Lastborder_PreviewMouseLeftButtonDown;
+		}
+
+		/// <summary>
+		/// 移动前的border
+		/// </summary>
+		public Border BorderForm;
+
+		/// <summary>
+		/// 移动前的border的列数
+		/// </summary>
+		public int columnCountForm;
+
+		/// <summary>
+		/// 移动中的项目鼠标指针图片
+		/// </summary>
+		public Cursor BorderCursor;
+
+		private void Lastborder_PreviewMouseLeftButtonDown(object sender,MouseButtonEventArgs e)
+		{
+			this.BorderForm = sender as Border;
+			Grid grid = BorderForm.Parent as Grid;
+			this.columnCountForm = PlayArea.Children.IndexOf(grid);
+			this.BorderCursor = BitmapCursor
 		}
 
 		/// <summary>
@@ -120,10 +179,20 @@ namespace SpiderCardsDemo
 			int[] cards = rect.Tag as int[];
 			for(int i = 0;i < cards.Length;i++)
 			{
-
+				Border border = CreateCard(cards[i]);
+				Grid grid = GetChildObject<Grid>(PlayArea,"paGrid" + i.ToString());
+				border.Margin = new Thickness(0,grid.Children.Count * 30,0,0);
+				border.Tag = grid.Children.Count * 30;
+				grid.Children.Add(border);
 			}
+			Border rectborder = rect.Parent as Border;
+
+			rectborder.Visibility = Visibility.Collapsed;
 		}
 
+		/// <summary>
+		/// 放卡到区域
+		/// </summary>
 		private void PutCardsIntoPlayArea()
 		{
 			for(int i = 0;i < PlayArea.ColumnDefinitions.Count;i++)
@@ -148,26 +217,43 @@ namespace SpiderCardsDemo
 				int a = 0;
 				foreach(int num in playcardlist[j])
 				{
-					Border border = new Border();
-					border.BorderThickness = new Thickness(1);
-					border.BorderBrush = Brushes.Black;
-					border.Height = 120;
-					border.Width = 80;
-					TextBlock textblock = new TextBlock();
-					textblock.Text = num.ToString();
-					textblock.Tag = num;
-					border.Child = textblock;
-					border.VerticalAlignment = VerticalAlignment.Top;
+					Border border = CreateCard(num);
+					Grid grid = GetChildObject<Grid>(PlayArea,"paGrid" + j.ToString());
 					border.Margin = new Thickness(0,a * 30,0,0);
-					PlayArea.Children.Add(border);
-					Grid.SetColumn(border,j);
-					//Grid.SetZIndex(border,j);
+					border.Tag = a * 30;
+					grid.Children.Add(border);
 					a++;
 				}
 			}
 		}
 
+		/// <summary>
+		/// 生成一张卡牌
+		/// </summary>
+		/// <param name="num"></param>
+		/// <returns></returns>
+		private Border CreateCard(int num)
+		{
+			Border border = new Border();
+			border.BorderThickness = new Thickness(1);
+			border.BorderBrush = Brushes.Black;
+			border.Height = 120;
+			border.Width = 80;
+			TextBlock textblock = new TextBlock();
+			textblock.Text = num.ToString();
+			textblock.Tag = num;
+			border.Child = textblock;
+			border.VerticalAlignment = VerticalAlignment.Top;
+			return border;
+		}
+
 		private int plusonecount = 0;
+		/// <summary>
+		/// 循环放count张卡
+		/// </summary>
+		/// <param name="playcard"></param>
+		/// <param name="num"></param>
+		/// <param name="count"></param>
 		private void ForeachPutCards(List<int> playcard,int num,int count)
 		{
 			if(cardlist[plusonecount][num] != 0)
@@ -203,24 +289,56 @@ namespace SpiderCardsDemo
 
 				for(int j = 0;j < card.Length;j++)
 				{
-					CheckCard(card,j);
+					RamdonCard(card,j);
 				}
 
 				cardlist.Add(card);
 			}
 		}
-
-		private void CheckCard(int[] card ,int j)
+		/// <summary>
+		/// 随机A-K点数
+		/// </summary>
+		/// <param name="card"></param>
+		/// <param name="j"></param>
+		private void RamdonCard(int[] card ,int j)
 		{
 			int random = r.Next(1,14);
 			if(card.Contains(random))
 			{
-				CheckCard(card,j);
+				RamdonCard(card,j);
 			}
 			else
 			{
 				card[j] = random;
 			}
+		}
+
+		/// <summary>
+		/// 父控件+控件名找到子控件
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="obj"></param>
+		/// <param name="name"></param>
+		/// <returns></returns>
+		public T GetChildObject<T>(DependencyObject obj,string name) where T : FrameworkElement
+		{
+			DependencyObject child = null;
+			T grandChild = null;
+			for(int i = 0;i <= VisualTreeHelper.GetChildrenCount(obj) - 1;i++)
+			{
+				child = VisualTreeHelper.GetChild(obj,i);
+				if(child is T && (((T)child).Name == name || string.IsNullOrEmpty(name)))
+				{
+					return (T)child;
+				}
+				else
+				{
+					grandChild = GetChildObject<T>(child,name);
+					if(grandChild != null)
+						return grandChild;
+				}
+			}
+			return null;
 		}
 	}
 }

@@ -25,6 +25,17 @@
 					<ColumnDefinition Width="*"></ColumnDefinition>
 					<ColumnDefinition Width="*"></ColumnDefinition>
 				</Grid.ColumnDefinitions>
+
+				<Grid Grid.Column="0" Name="paGrid0" Tag="0" AllowDrop="True"></Grid>
+				<Grid Grid.Column="1" Name="paGrid1" Tag="1" AllowDrop="True"></Grid>
+				<Grid Grid.Column="2" Name="paGrid2" Tag="2" AllowDrop="True"></Grid>
+				<Grid Grid.Column="3" Name="paGrid3" Tag="3" AllowDrop="True"></Grid>
+				<Grid Grid.Column="4" Name="paGrid4" Tag="4" AllowDrop="True"></Grid>
+				<Grid Grid.Column="5" Name="paGrid5" Tag="5" AllowDrop="True"></Grid>
+				<Grid Grid.Column="6" Name="paGrid6" Tag="6" AllowDrop="True"></Grid>
+				<Grid Grid.Column="7" Name="paGrid7" Tag="7" AllowDrop="True"></Grid>
+				<Grid Grid.Column="8" Name="paGrid8" Tag="8" AllowDrop="True"></Grid>
+				<Grid Grid.Column="9" Name="paGrid9" Tag="9" AllowDrop="True"></Grid>
 			</Grid>
 			<Grid Grid.Row="1">
 				<Grid.ColumnDefinitions>
