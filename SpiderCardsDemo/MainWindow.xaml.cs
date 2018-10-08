@@ -95,8 +95,64 @@ namespace SpiderCardsDemo
 					lastborder = border;
 				}
 			}
+			grid.MouseLeftButtonDown += Grid_MouseLeftButtonDown;
+			//lastborder.PreviewMouseLeftButtonDown += Lastborder_PreviewMouseLeftButtonDown;
+		}
 
-			lastborder.PreviewMouseLeftButtonDown += Lastborder_PreviewMouseLeftButtonDown;
+		private void Grid_MouseLeftButtonDown(object sender,MouseButtonEventArgs e)
+		{
+			if(BorderForm == null)
+			{
+				if(e.Source.GetType() == typeof(TextBlock))
+				{
+					TextBlock textblock = e.Source as TextBlock;
+					Border border = textblock.Parent as Border;
+					int borderNum = (int)border.Tag / 30;
+					Grid grid = border.Parent as Grid;
+					//最后一个可以移动
+					if(borderNum == grid.Children.Count - 1)
+					{
+						this.BorderForm = border;
+						this.columnCountForm = PlayArea.Children.IndexOf(grid);
+						this.BorderCursor = BitmapCursor.CreateBmpCursor(ImageSourceHelper.BitmapSourceMemoryStreamToBitmap(ImageSourceHelper.BytesToBitmapImage(ImageSourceHelper.UIElementToBytes(border,1))));
+						this.PlayArea.Cursor = this.BorderCursor;
+					}
+				}
+				//空位
+				else if(e.Source.GetType() == typeof(Grid))
+				{
+					return;
+				}
+			}
+			//放在此列
+			else
+			{
+				int num = (int)((TextBlock)this.BorderForm.Child).Tag;
+				if(e.Source.GetType() == typeof(TextBlock))
+				{
+					TextBlock textblock = e.Source as TextBlock;
+					Border border = textblock.Parent as Border;
+					//int borderNum = (int)border.Tag / 30;
+					Grid grid = border.Parent as Grid;
+					Border borderTo = CreateCard(num);
+					borderTo.Margin = new Thickness(0,grid.Children.Count * 30,0,0);
+					borderTo.Tag = grid.Children.Count * 30;
+					grid.Children.Add(borderTo);
+				}
+				else if(e.Source.GetType() == typeof(Grid))
+				{
+					Grid grid = e.Source as Grid;
+					Border borderTo = CreateCard(num);
+					borderTo.Margin = new Thickness(0,grid.Children.Count * 30,0,0);
+					borderTo.Tag = grid.Children.Count * 30;
+					grid.Children.Add(borderTo);
+				}
+
+				Grid gridFrom = this.BorderForm.Parent as Grid;
+				gridFrom.Children.Remove(this.BorderForm);
+				this.BorderForm = null;
+				this.PlayArea.Cursor = Cursors.Arrow;
+			}
 		}
 
 		/// <summary>
@@ -116,10 +172,7 @@ namespace SpiderCardsDemo
 
 		private void Lastborder_PreviewMouseLeftButtonDown(object sender,MouseButtonEventArgs e)
 		{
-			this.BorderForm = sender as Border;
-			Grid grid = BorderForm.Parent as Grid;
-			this.columnCountForm = PlayArea.Children.IndexOf(grid);
-			this.BorderCursor = BitmapCursor
+			
 		}
 
 		/// <summary>
@@ -340,5 +393,6 @@ namespace SpiderCardsDemo
 			}
 			return null;
 		}
+
 	}
 }
