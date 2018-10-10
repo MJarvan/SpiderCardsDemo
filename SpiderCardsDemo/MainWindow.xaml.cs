@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -54,50 +55,116 @@ namespace SpiderCardsDemo
 		//游戏区域就是8*13-5*100=54张,但要分成十列,所以有4列多一张
 		private List<List<int>> playcardlist = new List<List<int>>();
 
+		/// <summary>
+		/// 卡牌每列可移动的最大张数
+		/// </summary>
+		private List<int> cardmovelist = new List<int>();
 
+		/// <summary>
+		/// 移动前的border
+		/// </summary>
+		public Border BorderForm;
+
+		/// <summary>
+		/// 移动前的border的列数
+		/// </summary>
+		public int columnCountForm;
+
+		/// <summary>
+		/// 移动中的项目鼠标指针图片
+		/// </summary>
+		public Cursor BorderCursor;
+
+		/// <summary>
+		/// 游戏区域实时更新
+		/// </summary>
+		//private DataTable playDataTable = new DataTable("play");
 
 		private void Window_Loaded(object sender,RoutedEventArgs e)
 		{
 			RefreshCards();
 			PutCardsIntoDrawCardsArea();
 			PutCardsIntoPlayArea();
-			RefreshAllDrag();
+			RefreshPlayArea();
+			RefreshConnectedList();
+		}
+
+		private void RefreshConnectedList()
+		{
+			cardmovelist.Clear();
+			for(int i = 0;i < playcardlist.Count;i++)
+			{
+				int totalnum = 0;
+				totalnum = CheckConnected(totalnum,playcardlist[i]);
+				cardmovelist.Add(totalnum);
+			}
+
+			foreach(int num in cardmovelist)
+			{
+				//凑够A到K
+				if(num == 12)
+				{
+					int columnNum = cardmovelist.IndexOf(num);
+					Grid grid = GetChildObject<Grid>(PlayArea,"paGrid" + columnNum.ToString());
+					//0要换成K那张牌
+					grid.Children.RemoveRange(0,num + 1);
+				}
+			}
+		}
+
+		private int CheckConnected(int totalnum,List<int> list)
+		{
+			if(list.Count - 2 - totalnum >= 0)
+			{
+				if(list[list.Count - 1 - totalnum] - list[list.Count - 2 - totalnum] == -1)
+				{
+					totalnum++;
+					totalnum = CheckConnected(totalnum,list);
+				}
+			}
+				
+			return totalnum;
 		}
 
 		/// <summary>
-		/// 刷新全部列的拖拽
+		/// 刻画游戏区域
 		/// </summary>
-		private void RefreshAllDrag()
+		private void RefreshPlayArea()
 		{
-			for(int i = 0;i < PlayArea.ColumnDefinitions.Count;i++)
+			//添加点击事件
+			for(int a = 0;a < PlayArea.ColumnDefinitions.Count;a++)
 			{
-				RefreshDrag(i);
+				//playDataTable.Columns.Add(a.ToString(),typeof(int));
+				Grid grid = GetChildObject<Grid>(PlayArea,"paGrid" + a.ToString());
+				grid.MouseLeftButtonDown += Grid_MouseLeftButtonDown;
 			}
+			////形成直观datatable
+			//for(int i = 0;i < 6;i++)
+			//{
+			//	DataRow dr = playDataTable.NewRow();
+			//	for(int j = 0;j < playcardlist.Count;j++)
+			//	{
+			//		if(i == 5 && j >= 4)
+			//		{
+			//			break;
+			//		}
+			//		else
+			//		{
+			//			dr[j] = playcardlist[j][i];
+			//		}
+			//	}
+			//	playDataTable.Rows.Add(dr);
+			//}
+			////
+			//for(int i = 0;i < playDataTable.Columns.Count;i++)
+			//{
+			//	if(i < 4)
+			//	{
+			//		(int)playDataTable.Rows[6][i] - (int)playDataTable.Rows[6][i]
+			//	}
+			//}
 		}
 
-		/// <summary>
-		/// 刷新某一列
-		/// </summary>
-		/// <param name="num"></param>
-		private void RefreshDrag(int num)
-		{
-			Border lastborder = new Border();
-			Grid grid = GetChildObject<Grid>(PlayArea,"paGrid" + num.ToString());
-			for(int i = 0;i < grid.Children.Count;i++)
-			{
-				Border border = grid.Children[i] as Border;
-				if(lastborder.Tag == null)
-				{
-					lastborder = border;
-				}
-				else if ((int)border.Tag > (int)lastborder.Tag)
-				{
-					lastborder = border;
-				}
-			}
-			grid.MouseLeftButtonDown += Grid_MouseLeftButtonDown;
-			//lastborder.PreviewMouseLeftButtonDown += Lastborder_PreviewMouseLeftButtonDown;
-		}
 
 		private void Grid_MouseLeftButtonDown(object sender,MouseButtonEventArgs e)
 		{
@@ -132,47 +199,50 @@ namespace SpiderCardsDemo
 				{
 					TextBlock textblock = e.Source as TextBlock;
 					Border border = textblock.Parent as Border;
-					//int borderNum = (int)border.Tag / 30;
+					int borderNum = (int)border.Tag / 30;
 					Grid grid = border.Parent as Grid;
+					int columnNum = PlayArea.Children.IndexOf(grid);
+					if(this.columnCountForm == PlayArea.Children.IndexOf(grid))
+					{
+						ClearCursor();
+					}
 					Border borderTo = CreateCard(num);
 					borderTo.Margin = new Thickness(0,grid.Children.Count * 30,0,0);
 					borderTo.Tag = grid.Children.Count * 30;
 					grid.Children.Add(borderTo);
+					playcardlist[columnNum].Add(num);
 				}
 				else if(e.Source.GetType() == typeof(Grid))
 				{
 					Grid grid = e.Source as Grid;
+					int columnNum = PlayArea.Children.IndexOf(grid);
+					if(this.columnCountForm == PlayArea.Children.IndexOf(grid))
+					{
+						ClearCursor();
+					}
 					Border borderTo = CreateCard(num);
 					borderTo.Margin = new Thickness(0,grid.Children.Count * 30,0,0);
 					borderTo.Tag = grid.Children.Count * 30;
 					grid.Children.Add(borderTo);
+					playcardlist[columnNum].Add(num);
 				}
 
+				ClearCursor();
+				RefreshConnectedList();
+			}
+		}
+
+		private void ClearCursor()
+		{
+			if(this.BorderForm != null)
+			{
 				Grid gridFrom = this.BorderForm.Parent as Grid;
+				int columnNum = PlayArea.Children.IndexOf(gridFrom);
+				playcardlist[columnNum].RemoveAt(playcardlist[columnNum].Count-1);
 				gridFrom.Children.Remove(this.BorderForm);
 				this.BorderForm = null;
 				this.PlayArea.Cursor = Cursors.Arrow;
 			}
-		}
-
-		/// <summary>
-		/// 移动前的border
-		/// </summary>
-		public Border BorderForm;
-
-		/// <summary>
-		/// 移动前的border的列数
-		/// </summary>
-		public int columnCountForm;
-
-		/// <summary>
-		/// 移动中的项目鼠标指针图片
-		/// </summary>
-		public Cursor BorderCursor;
-
-		private void Lastborder_PreviewMouseLeftButtonDown(object sender,MouseButtonEventArgs e)
-		{
-			
 		}
 
 		/// <summary>
