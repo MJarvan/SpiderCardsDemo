@@ -63,7 +63,7 @@ namespace SpiderCardsDemo
 		/// <summary>
 		/// 移动前的border
 		/// </summary>
-		public Border BorderForm;
+		public List<Border> BorderFormList = new List<Border>();
 
 		/// <summary>
 		/// 移动前的border的列数
@@ -89,6 +89,9 @@ namespace SpiderCardsDemo
 			RefreshConnectedList();
 		}
 
+		/// <summary>
+		/// 刷新每列最大可以变动数量
+		/// </summary>
 		private void RefreshConnectedList()
 		{
 			cardmovelist.Clear();
@@ -99,15 +102,24 @@ namespace SpiderCardsDemo
 				cardmovelist.Add(totalnum);
 			}
 
-			foreach(int num in cardmovelist)
+			for(int j = 0;j < cardmovelist.Count;j++)
 			{
-				//凑够A到K
-				if(num == 12)
+				//凑够A到K,生成一个已完成的到左下角
+				if(cardmovelist[j] == 12)
 				{
-					int columnNum = cardmovelist.IndexOf(num);
-					Grid grid = GetChildObject<Grid>(PlayArea,"paGrid" + columnNum.ToString());
-					//0要换成K那张牌
-					grid.Children.RemoveRange(0,num + 1);
+					Grid grid = GetChildObject<Grid>(PlayArea,"paGrid" + j.ToString());
+					grid.Children.RemoveRange(grid.Children.Count - 13,cardmovelist[j] + 1);
+					playcardlist[j].RemoveRange(playcardlist[j].Count - 13,cardmovelist[j] + 1);
+					Border border = new Border();
+					border.BorderThickness = new Thickness(1);
+					border.BorderBrush = Brushes.Black;
+					Rectangle rect = new Rectangle();
+					border.Height = 60;
+					border.Width = 40;
+					rect.Fill = Brushes.Blue;
+					border.Child = rect;
+					FinishArea.Children.Add(border);
+					Grid.SetColumn(border,FinishArea.Children.Count);
 				}
 			}
 		}
@@ -168,20 +180,38 @@ namespace SpiderCardsDemo
 
 		private void Grid_MouseLeftButtonDown(object sender,MouseButtonEventArgs e)
 		{
-			if(BorderForm == null)
+			//移动此列
+			if(BorderFormList.Count == 0)
 			{
 				if(e.Source.GetType() == typeof(TextBlock))
 				{
 					TextBlock textblock = e.Source as TextBlock;
 					Border border = textblock.Parent as Border;
-					int borderNum = (int)border.Tag / 30;
+					//int borderNum = (int)border.Tag / 30;
 					Grid grid = border.Parent as Grid;
-					//最后一个可以移动
-					if(borderNum == grid.Children.Count - 1)
+					int borderNum = grid.Children.IndexOf(border);
+					int columnNum = PlayArea.Children.IndexOf(grid);
+					//可以移动一个或者多个
+					if(cardmovelist[columnNum] > 0)
 					{
-						this.BorderForm = border;
-						this.columnCountForm = PlayArea.Children.IndexOf(grid);
-						this.BorderCursor = BitmapCursor.CreateBmpCursor(ImageSourceHelper.BitmapSourceMemoryStreamToBitmap(ImageSourceHelper.BytesToBitmapImage(ImageSourceHelper.UIElementToBytes(border,1))));
+						int moveNum = grid.Children.Count - borderNum;
+						if(moveNum <= cardmovelist[columnNum] + 1)
+						{
+							for(int i = 0;i < moveNum;i++)
+							{
+								this.BorderFormList.Add(grid.Children[grid.Children.Count - 1 - i] as Border);
+							}
+							this.columnCountForm = columnNum;
+							this.BorderCursor = BitmapCursor.CreateBmpCursor(ImageSourceHelper.BitmapSourceMemoryStreamToBitmap(ImageSourceHelper.BytesToBitmapImage(ImageSourceHelper.UIElementToBytes(border,1,1 + 0.25 * (moveNum - 1)))));
+							this.PlayArea.Cursor = this.BorderCursor;
+						}
+					}
+					//只有一个可以移动
+					else
+					{
+						this.BorderFormList.Add(border);
+						this.columnCountForm = columnNum;
+						this.BorderCursor = BitmapCursor.CreateBmpCursor(ImageSourceHelper.BitmapSourceMemoryStreamToBitmap(ImageSourceHelper.BytesToBitmapImage(ImageSourceHelper.UIElementToBytes(border,1,1))));
 						this.PlayArea.Cursor = this.BorderCursor;
 					}
 				}
@@ -194,55 +224,71 @@ namespace SpiderCardsDemo
 			//放在此列
 			else
 			{
-				int num = (int)((TextBlock)this.BorderForm.Child).Tag;
-				if(e.Source.GetType() == typeof(TextBlock))
+				for(int i = BorderFormList.Count - 1;i >= 0;i--)
 				{
-					TextBlock textblock = e.Source as TextBlock;
-					Border border = textblock.Parent as Border;
-					int borderNum = (int)border.Tag / 30;
-					Grid grid = border.Parent as Grid;
-					int columnNum = PlayArea.Children.IndexOf(grid);
-					if(this.columnCountForm == PlayArea.Children.IndexOf(grid))
+					int num = (int)((TextBlock)this.BorderFormList[i].Child).Tag;
+					if(e.Source.GetType() == typeof(TextBlock))
 					{
-						ClearCursor();
+						TextBlock textblock = e.Source as TextBlock;
+						Border border = textblock.Parent as Border;
+						int borderNum = (int)border.Tag / 30;
+						Grid grid = border.Parent as Grid;
+						int columnNum = PlayArea.Children.IndexOf(grid);
+						if(this.columnCountForm == columnNum)
+						{
+							ClearCursor(true);
+							return;
+						}
+						else
+						{
+							Border borderTo = CreateCard(num);
+							borderTo.Margin = new Thickness(0,grid.Children.Count * 30,0,0);
+							borderTo.Tag = grid.Children.Count * 30;
+							grid.Children.Add(borderTo);
+							playcardlist[columnNum].Add(num);
+						}
 					}
-					Border borderTo = CreateCard(num);
-					borderTo.Margin = new Thickness(0,grid.Children.Count * 30,0,0);
-					borderTo.Tag = grid.Children.Count * 30;
-					grid.Children.Add(borderTo);
-					playcardlist[columnNum].Add(num);
-				}
-				else if(e.Source.GetType() == typeof(Grid))
-				{
-					Grid grid = e.Source as Grid;
-					int columnNum = PlayArea.Children.IndexOf(grid);
-					if(this.columnCountForm == PlayArea.Children.IndexOf(grid))
+					else if(e.Source.GetType() == typeof(Grid))
 					{
-						ClearCursor();
+						Grid grid = e.Source as Grid;
+						int columnNum = PlayArea.Children.IndexOf(grid);
+						if(this.columnCountForm == PlayArea.Children.IndexOf(grid))
+						{
+							ClearCursor(true);
+							return;
+						}
+						else
+						{
+							Border borderTo = CreateCard(num);
+							borderTo.Margin = new Thickness(0,grid.Children.Count * 30,0,0);
+							borderTo.Tag = grid.Children.Count * 30;
+							grid.Children.Add(borderTo);
+							playcardlist[columnNum].Add(num);
+						}
 					}
-					Border borderTo = CreateCard(num);
-					borderTo.Margin = new Thickness(0,grid.Children.Count * 30,0,0);
-					borderTo.Tag = grid.Children.Count * 30;
-					grid.Children.Add(borderTo);
-					playcardlist[columnNum].Add(num);
 				}
 
-				ClearCursor();
-				RefreshConnectedList();
+				ClearCursor(false);
 			}
 		}
 
-		private void ClearCursor()
+		/// <summary>
+		/// 清除所有指标
+		/// </summary>
+		private void ClearCursor(bool isSameColumn)
 		{
-			if(this.BorderForm != null)
+			if(!isSameColumn)
 			{
-				Grid gridFrom = this.BorderForm.Parent as Grid;
-				int columnNum = PlayArea.Children.IndexOf(gridFrom);
-				playcardlist[columnNum].RemoveAt(playcardlist[columnNum].Count-1);
-				gridFrom.Children.Remove(this.BorderForm);
-				this.BorderForm = null;
-				this.PlayArea.Cursor = Cursors.Arrow;
+				for(int i = 0;i < this.BorderFormList.Count;i++)
+				{
+					Grid grid = GetChildObject<Grid>(PlayArea,"paGrid" + this.columnCountForm.ToString());
+					playcardlist[this.columnCountForm].RemoveAt(playcardlist[this.columnCountForm].Count - 1);
+					grid.Children.Remove(this.BorderFormList[i]);
+				}
 			}
+			this.BorderFormList.Clear();
+			this.PlayArea.Cursor = Cursors.Arrow;
+			RefreshConnectedList();
 		}
 
 		/// <summary>

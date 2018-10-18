@@ -246,13 +246,13 @@ namespace SpiderCardsDemo
 		/// <param name="doubleScale"></param>
 		/// <param name="intQuality"></param>
 		/// <returns></returns>
-		public static byte[] UIElementToBytes(UIElement uiElement,double doubleScale/*,int intQuality*/)
+		public static byte[] UIElementToBytes(UIElement uiElement,double doubleScaleWidth,double doubleScaleHeight/*,int intQuality*/)
 		{
 			double doubleActualWidth = uiElement.RenderSize.Width;
 			double doubleActualHeight = uiElement.RenderSize.Height;
 
-			double doubleRenderWidth = doubleActualWidth * doubleScale;
-			double doubleRenderHeight = doubleActualHeight * doubleScale;
+			double doubleRenderWidth = doubleActualWidth * doubleScaleWidth;
+			double doubleRenderHeight = doubleActualHeight * doubleScaleHeight;
 
 			RenderTargetBitmap renderTargetBitmap = new RenderTargetBitmap((int)doubleRenderWidth,(int)doubleRenderHeight,96,96,PixelFormats.Pbgra32);
 			VisualBrush visualBrush = new VisualBrush(uiElement);
@@ -262,7 +262,7 @@ namespace SpiderCardsDemo
 
 			using(drawingContext)
 			{
-				drawingContext.PushTransform(new ScaleTransform(doubleScale,doubleScale));
+				drawingContext.PushTransform(new ScaleTransform(doubleScaleWidth,doubleScaleHeight));
 				drawingContext.DrawRectangle(visualBrush,null,new Rect(new Point(0,0),new Point(doubleActualWidth,doubleActualHeight)));
 			}
 			renderTargetBitmap.Render(drawingVisual);
