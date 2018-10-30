@@ -122,6 +122,19 @@ namespace SpiderCardsDemo
 					Grid.SetColumn(border,FinishArea.Children.Count);
 				}
 			}
+
+			RefreshFinishArea();
+		}
+
+		/// <summary>
+		/// 判断胜利条件
+		/// </summary>
+		private void RefreshFinishArea()
+		{
+			if(FinishArea.Children.Count == FinishArea.ColumnDefinitions.Count)
+			{
+				MessageBox.Show("你赢了");
+			}
 		}
 
 		private int CheckConnected(int totalnum,List<int> list)
@@ -234,36 +247,51 @@ namespace SpiderCardsDemo
 						int borderNum = (int)border.Tag / 30;
 						Grid grid = border.Parent as Grid;
 						int columnNum = PlayArea.Children.IndexOf(grid);
-						if(this.columnCountForm == columnNum)
-						{
-							ClearCursor(true);
-							return;
-						}
-						else
+
+						//跟本列最后一个比较
+
+						//if(this.columnCountForm == columnNum)
+						//{
+						//	ClearCursor(true);
+						//	return;
+						//}
+
+						//可以放
+						int lastbordernum = (int)(this.BorderFormList[i].Child as TextBlock).Tag;
+						if(playcardlist[columnNum][playcardlist[columnNum].Count - 1] - lastbordernum == 1)
 						{
 							Border borderTo = CreateCard(num);
 							borderTo.Margin = new Thickness(0,grid.Children.Count * 30,0,0);
 							borderTo.Tag = grid.Children.Count * 30;
 							grid.Children.Add(borderTo);
 							playcardlist[columnNum].Add(num);
+						}
+						//回归原位
+						else
+						{
+							ClearCursor(true);
+							return;
 						}
 					}
 					else if(e.Source.GetType() == typeof(Grid))
 					{
+						//判断grid是否为空 如果是空可以把K放进去
 						Grid grid = e.Source as Grid;
 						int columnNum = PlayArea.Children.IndexOf(grid);
-						if(this.columnCountForm == PlayArea.Children.IndexOf(grid))
-						{
-							ClearCursor(true);
-							return;
-						}
-						else
+						int lastbordernum = (int)(this.BorderFormList[i].Child as TextBlock).Tag;
+						if(playcardlist[columnNum][playcardlist[columnNum].Count - 1] - lastbordernum == 1)
 						{
 							Border borderTo = CreateCard(num);
 							borderTo.Margin = new Thickness(0,grid.Children.Count * 30,0,0);
 							borderTo.Tag = grid.Children.Count * 30;
 							grid.Children.Add(borderTo);
 							playcardlist[columnNum].Add(num);
+							
+						}
+						else
+						{
+							ClearCursor(true);
+							return;
 						}
 					}
 				}
