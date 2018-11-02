@@ -275,23 +275,37 @@ namespace SpiderCardsDemo
 					}
 					else if(e.Source.GetType() == typeof(Grid))
 					{
-						//判断grid是否为空 如果是空可以把K放进去
 						Grid grid = e.Source as Grid;
 						int columnNum = PlayArea.Children.IndexOf(grid);
-						int lastbordernum = (int)(this.BorderFormList[i].Child as TextBlock).Tag;
-						if(playcardlist[columnNum][playcardlist[columnNum].Count - 1] - lastbordernum == 1)
+						int bordernum = (int)(this.BorderFormList[i].Child as TextBlock).Tag;
+						//判断grid是否为空 如果是空可以把K放进去
+						if(grid.Children.Count == 0)
 						{
-							Border borderTo = CreateCard(num);
-							borderTo.Margin = new Thickness(0,grid.Children.Count * 30,0,0);
-							borderTo.Tag = grid.Children.Count * 30;
-							grid.Children.Add(borderTo);
-							playcardlist[columnNum].Add(num);
-							
+							int lastbordernum = (int)(this.BorderFormList[this.BorderFormList.Count - 1].Child as TextBlock).Tag;
+							if(lastbordernum == 13)
+							{
+								Border borderTo = CreateCard(num);
+								borderTo.Margin = new Thickness(0,grid.Children.Count * 30,0,0);
+								borderTo.Tag = grid.Children.Count * 30;
+								grid.Children.Add(borderTo);
+								playcardlist[columnNum].Add(num);
+							}
 						}
 						else
 						{
-							ClearCursor(true);
-							return;
+							if(playcardlist[columnNum][playcardlist[columnNum].Count - 1] - bordernum == 1)
+							{
+								Border borderTo = CreateCard(num);
+								borderTo.Margin = new Thickness(0,grid.Children.Count * 30,0,0);
+								borderTo.Tag = grid.Children.Count * 30;
+								grid.Children.Add(borderTo);
+								playcardlist[columnNum].Add(num);
+							}
+							else
+							{
+								ClearCursor(true);
+								return;
+							}
 						}
 					}
 				}
